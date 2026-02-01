@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Паливний талон — розшифровка</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  max-width: 480px;
+  margin: 30px auto;
+  padding: 10px;
+}
+h1 {
+  text-align: center;
+  font-size: 20px;
+}
+h2 {
+  font-size: 16px;
+  margin-top: 25px;
+}
+input {
+  width: 100%;
+  padding: 10px;
+  font-size: 18px;
+  margin-top: 10px;
+}
+button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  font-size: 16px;
+}
+.result {
+  margin-top: 20px;
+  background: #f2f2f2;
+  padding: 15px;
+  font-size: 15px;
+}
+.error {
+  color: #b00000;
+}
+</style>
+</head>
+
+<body>
+
+<h1>КП «Водопровідні мережі»<br>Паливний талон</h1>
+
+<h2>Інструкція з розшифровки номера</h2>
+
+<p>
+Номер талона складається з <b>9 цифр</b> у форматі <b>MMFFNNSSS</b>, де:
+</p>
+
+<ul>
+  <li><b>MM</b> — місяць випуску талона</li>
+  <li><b>FF</b> — код палива:
+    <ul>
+      <li>01 — бензин</li>
+      <li>02 — дизельне паливо</li>
+    </ul>
+  </li>
+  <li><b>NN</b> — номінал талона (літри)</li>
+  <li><b>SSS</b> — порядковий номер талона</li>
+</ul>
+
+<p><b>Приклад:</b> 010205001</p>
+
+<h2>Перевірка талона</h2>
+
+<input id="code" maxlength="9" placeholder="Введіть номер талона">
+<button onclick="decode()">Підтвердити</button>
+
+<div class="result" id="out"></div>
+
+<script>
+function decode() {
+  const out = document.getElementById("out");
+  const c = document.getElementById("code").value;
+
+  if (!/^\d{9}$/.test(c)) {
+    out.innerHTML = "<span class='error'>❌ Номер талона має містити 9 цифр</span>";
+    return;
+  }
+
+  const month = c.substr(0,2);
+  const fuel  = c.substr(2,2);
+  const nom   = c.substr(4,2);
+  const num   = c.substr(6,3);
+
+  const fuelName = {
+    "01": "Бензин",
+    "02": "Дизельне паливо"
+  }[fuel];
+
+  if (!fuelName) {
+    out.innerHTML = "<span class='error'>❌ Невідомий код палива</span>";
+    return;
+  }
+
+  out.innerHTML =
+    "<b>Детальна інформація про талон:</b><br><br>" +
+    "<b>Місяць випуску:</b> " + month + "<br>" +
+    "<b>Тип палива:</b> " + fuelName + "<br>" +
+    "<b>Номінал:</b> " + parseInt(nom,10) + " л<br>" +
+    "<b>Порядковий номер:</b> " + num;
+}
+</script>
+
+</body>
+</html>
