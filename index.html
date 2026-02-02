@@ -11,32 +11,47 @@ body {
   margin: 30px auto;
   padding: 10px;
 }
-h1 {
+
+.header {
   text-align: center;
+  margin-bottom: 20px;
+}
+
+.logo {
+  max-width: 120px;
+  margin-bottom: 10px;
+}
+
+h1 {
   font-size: 20px;
 }
+
 h2 {
   font-size: 16px;
   margin-top: 25px;
 }
+
 input {
   width: 100%;
   padding: 10px;
   font-size: 18px;
   margin-top: 10px;
 }
+
 button {
   width: 100%;
   padding: 10px;
   margin-top: 10px;
   font-size: 16px;
 }
+
 .result {
   margin-top: 20px;
   background: #f2f2f2;
   padding: 15px;
   font-size: 15px;
 }
+
 .error {
   color: #b00000;
 }
@@ -45,7 +60,10 @@ button {
 
 <body>
 
-<h1>КП «Водопровідні мережі»<br>Паливний талон</h1>
+<div class="header">
+  <img src="logo.png" alt="Логотип КП" class="logo">
+  <h1>КП «Водопровідні мережі»<br>Паливний талон</h1>
+</div>
 
 <h2>Інструкція з розшифровки номера</h2>
 
