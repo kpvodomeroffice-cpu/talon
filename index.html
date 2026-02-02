@@ -6,50 +6,84 @@
 
 <style>
 body {
-  font-family: Arial, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
   max-width: 480px;
-  margin: 30px auto;
-  padding: 10px;
+  margin: 0 auto;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .header {
   text-align: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
   margin-bottom: 20px;
 }
 
 .logo {
-  max-width: 120px;
-  margin-bottom: 10px;
+  max-width: 100px;
+  margin-bottom: 8px;
 }
 
 h1 {
   font-size: 20px;
+  margin: 0;
 }
 
 h2 {
   font-size: 16px;
   margin-top: 25px;
+  color: #2f6fad;
+}
+
+.info {
+  background: #f9fbfd;
+  border-left: 4px solid #2f6fad;
+  padding: 12px;
+  font-size: 14px;
 }
 
 input {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   font-size: 18px;
   margin-top: 10px;
+  border: 2px solid #2f6fad;
+  border-radius: 6px;
+  box-sizing: border-box;
 }
 
 button {
   width: 100%;
-  padding: 10px;
+  padding: 12px;
   margin-top: 10px;
   font-size: 16px;
+  background: #2f6fad;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #255a8a;
 }
 
 .result {
   margin-top: 20px;
-  background: #f2f2f2;
+  background: #ffffff;
   padding: 15px;
   font-size: 15px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
 }
 
 .error {
@@ -60,37 +94,33 @@ button {
 
 <body>
 
-<div class="header">
-  <img src="logo.png" alt="Логотип КП" class="logo">
-  <h1>КП «Водопровідні мережі»<br>Паливний талон</h1>
+<div class="container">
+
+  <div class="header">
+    <img src="logo.png" alt="Логотип КП" class="logo">
+    <h1>КП «Водопровідні мережі»<br>Паливний талон</h1>
+  </div>
+
+  <h2>Інструкція з розшифровки</h2>
+
+  <div class="info">
+    Номер талона складається з <b>9 цифр</b> у форматі <b>MMFFNNSSS</b>, де:<br><br>
+    <b>MM</b> — місяць випуску<br>
+    <b>FF</b> — код палива (01 — бензин, 02 — дизель)<br>
+    <b>NN</b> — номінал (літри)<br>
+    <b>SSS</b> — порядковий номер
+  </div>
+
+  <p><b>Приклад:</b> 010205001</p>
+
+  <h2>Перевірка талона</h2>
+
+  <input id="code" maxlength="9" placeholder="Введіть номер талона">
+  <button onclick="decode()">Підтвердити</button>
+
+  <div class="result" id="out"></div>
+
 </div>
-
-<h2>Інструкція з розшифровки номера</h2>
-
-<p>
-Номер талона складається з <b>9 цифр</b> у форматі <b>MMFFNNSSS</b>, де:
-</p>
-
-<ul>
-  <li><b>MM</b> — місяць випуску талона</li>
-  <li><b>FF</b> — код палива:
-    <ul>
-      <li>01 — бензин</li>
-      <li>02 — дизельне паливо</li>
-    </ul>
-  </li>
-  <li><b>NN</b> — номінал талона (літри)</li>
-  <li><b>SSS</b> — порядковий номер талона</li>
-</ul>
-
-<p><b>Приклад:</b> 010205001</p>
-
-<h2>Перевірка талона</h2>
-
-<input id="code" maxlength="9" placeholder="Введіть номер талона">
-<button onclick="decode()">Підтвердити</button>
-
-<div class="result" id="out"></div>
 
 <script>
 function decode() {
@@ -119,10 +149,10 @@ function decode() {
 
   out.innerHTML =
     "<b>Детальна інформація про талон:</b><br><br>" +
-    "<b>Місяць випуску:</b> " + month + "<br>" +
-    "<b>Тип палива:</b> " + fuelName + "<br>" +
-    "<b>Номінал:</b> " + parseInt(nom,10) + " л<br>" +
-    "<b>Порядковий номер:</b> " + num;
+    "📅 <b>Місяць випуску:</b> " + month + "<br>" +
+    "⛽ <b>Тип палива:</b> " + fuelName + "<br>" +
+    "🧾 <b>Номінал:</b> " + parseInt(nom,10) + " л<br>" +
+    "🔢 <b>Порядковий номер:</b> " + num;
 }
 </script>
 
