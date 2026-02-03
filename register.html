@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Журнал паливних талонів</title>
+
+<style>
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif;
+  background: #f4f6f8;
+  margin: 0;
+  padding: 20px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.header {
+  text-align: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 20px;
+}
+
+.logo {
+  max-width: 100px;
+  margin-bottom: 8px;
+}
+
+h1 {
+  font-size: 20px;
+  margin: 0;
+}
+
+h2 {
+  margin-top: 25px;
+  color: #2f6fad;
+}
+
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+input, select {
+  padding: 10px;
+  font-size: 16px;
+}
+
+button {
+  padding: 10px 14px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+button.danger {
+  background: #e74c3c;
+  color: white;
+  border: none;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: center;
+}
+
+th {
+  background: #f0f3f7;
+}
+
+.used {
+  background: #e9f7ef;
+}
+
+.summary {
+  margin-top: 20px;
+  font-size: 16px;
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+.footer {
+  margin-top: 25px;
+  text-align: center;
+  font-size: 12px;
+  color: #777;
+}
+
+@media print {
+  .controls, button {
+    display: none;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- ШАПКА -->
+  <div class="header">
+    <img src="logo.png" alt="Логотип КП" class="logo">
+    <h1>КП «Водопровідні мережі»<br>
+  </div>
+
+  <h2>Журнал обліку паливних талонів</h2>
+
+  <!-- КЕРУВАННЯ -->
+  <div class="controls">
+    <input id="newCode" placeholder="Введіть номер талона (можна з №)">
+    <button onclick="addTalon()">Додати</button>
+
+    <input id="search" placeholder="Пошук за номером" oninput="render()">
+
+    <select id="monthFilter" onchange="render()">
+      <option value="">Всі місяці</option>
+      <option value="01">Січень</option><option value="02">Лютий</option>
+      <option value="03">Березень</option><option value="04">Квітень</option>
+      <option value="05">Травень</option><option value="06">Червень</option>
+      <option value="07">Липень</option><option value="08">Серпень</option>
+      <option value="09">Вересень</option><option value="10">Жовтень</option>
+      <option value="11">Листопад</option><option value="12">Грудень</option>
+    </select>
+
+    <button onclick="window.print()">Друк</button>
+  </div>
+
+  <!-- ТАБЛИЦЯ -->
+  <table>
+    <thead>
+      <tr>
+        <th>Місяць</th>
+        <th>Номер талона</th>
+        <th>Паливо</th>
+        <th>Номінал (л)</th>
+        <th>Використано</th>
+        <th>Дія</th>
+      </tr>
+    </thead>
+    <tbody id="tbody"></tbody>
+  </table>
+
+  <!-- ПІДСУМКИ -->
+  <div class="summary" id="summary"></div>
+
+  <h2>Підсумок по місяцях</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Місяць</th>
+        <th>А-95 (л)</th>
+        <th>ДП (л)</th>
+        <th>Разом (л)</th>
+      </tr>
+    </thead>
+    <tbody id="monthSummary"></tbody>
+  </table>
+
+  <div class="footer">
+    Службова сторінка • Версія V 1.4.0
+  </div>
+
+</div>
+
+<script>
+let talons = JSON.parse(localStorage.getItem("talons") || "[]");
+
+const months = {
+  "01":"Січень","02":"Лютий","03":"Березень","04":"Квітень",
+  "05":"Травень","06":"Червень","07":"Липень","08":"Серпень",
+  "09":"Вересень","10":"Жовтень","11":"Листопад","12":"Грудень"
+};
+
+function normalizeCode(input) {
+  return input.replace(/[^\d]/g, "");
+}
+
+function addTalon() {
+  let raw = document.getElementById("newCode").value;
+  let c = normalizeCode(raw);
+
+  if (!/^\d{9}$/.test(c)) {
+    alert("Невірний формат номера талона");
+    return;
+  }
+
+  if (talons.find(t => t.code === c)) {
+    alert("Такий талон вже існує");
+    return;
+  }
+
+  talons.push({
+    code: c,
+    month: c.substr(0,2),
+    fuel: c.substr(2,2),
+    nominal: parseInt(c.substr(4,2),10),
+    used: false
+  });
+
+  save();
+  render();
+  document.getElementById("newCode").value = "";
+}
+
+function toggleUsed(i) {
+  talons[i].used = !talons[i].used;
+  save();
+  render();
+}
+
+function deleteTalon(i) {
+  if (!confirm("Видалити цей талон?")) return;
+  talons.splice(i,1);
+  save();
+  render();
+}
+
+function save() {
+  localStorage.setItem("talons", JSON.stringify(talons));
+}
+
+function render() {
+  const tbody = document.getElementById("tbody");
+  const monthSummary = document.getElementById("monthSummary");
+  const search = normalizeCode(document.getElementById("search").value);
+  const filterMonth = document.getElementById("monthFilter").value;
+
+  tbody.innerHTML = "";
+  monthSummary.innerHTML = "";
+
+  let sum95 = 0, sumDP = 0;
+  const perMonth = {};
+
+  talons.forEach((t, i) => {
+    if (search && !t.code.includes(search)) return;
+    if (filterMonth && t.month !== filterMonth) return;
+
+    if (t.used) {
+      if (t.fuel === "01") sum95 += t.nominal;
+      if (t.fuel === "02") sumDP += t.nominal;
+
+      if (!perMonth[t.month]) perMonth[t.month] = {f95:0, dp:0};
+      if (t.fuel === "01") perMonth[t.month].f95 += t.nominal;
+      if (t.fuel === "02") perMonth[t.month].dp += t.nominal;
+    }
+
+    const tr = document.createElement("tr");
+    if (t.used) tr.className = "used";
+
+    tr.innerHTML = `
+      <td>${months[t.month]}</td>
+      <td>№${t.code}</td>
+      <td>${t.fuel==="01"?"Бензин А-95":"Дизельне паливо"}</td>
+      <td>${t.nominal}</td>
+      <td><input type="checkbox" ${t.used?"checked":""} onclick="toggleUsed(${i})"></td>
+      <td><button class="danger" onclick="deleteTalon(${i})">🗑</button></td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById("summary").innerHTML = `
+    <div><b>Бензин А-95:</b> ${sum95} л</div>
+    <div><b>Дизельне паливо:</b> ${sumDP} л</div>
+    <div><b>Всього:</b> ${sum95 + sumDP} л</div>
+  `;
+
+  Object.keys(perMonth).sort().forEach(m => {
+    const r = perMonth[m];
+    monthSummary.innerHTML += `
+      <tr>
+        <td>${months[m]}</td>
+        <td>${r.f95}</td>
+        <td>${r.dp}</td>
+        <td><b>${r.f95 + r.dp}</b></td>
+      </tr>`;
+  });
+}
+
+render();
+</script>
+
+</body>
+</html>
