@@ -42,21 +42,9 @@ button{
   padding:10px 14px;
   cursor:pointer;
 }
-button.primary{
-  background:#2f6fad;
-  color:#fff;
-  border:none;
-}
-button.secondary{
-  background:#9aa5b1;
-  color:#fff;
-  border:none;
-}
-button.danger{
-  background:#e74c3c;
-  color:#fff;
-  border:none;
-}
+button.primary{background:#2f6fad;color:#fff;border:none}
+button.secondary{background:#9aa5b1;color:#fff;border:none}
+button.danger{background:#e74c3c;color:#fff;border:none}
 table{
   width:100%;
   border-collapse:collapse;
@@ -84,7 +72,7 @@ th{background:#f0f3f7}
   color:#777;
 }
 
-/* MODAL */
+/* modal */
 .modal{
   display:none;
   position:fixed;
@@ -98,6 +86,7 @@ th{background:#f0f3f7}
   padding:20px;
   border-radius:8px;
 }
+
 @media print{
   .controls,button,.modal{display:none}
 }
@@ -116,7 +105,7 @@ th{background:#f0f3f7}
 <h2>Журнал обліку паливних талонів</h2>
 
 <div class="controls">
-  <button class="primary" onclick="openImport()">Імпорт</button>
+  <button class="primary" onclick="openImport()">Імпорт талонів</button>
 
   <input id="search" placeholder="Пошук за номером" oninput="render()">
   <button class="secondary" onclick="clearSearch()">Очистити</button>
@@ -130,6 +119,9 @@ th{background:#f0f3f7}
     <option value="09">Вересень</option><option value="10">Жовтень</option>
     <option value="11">Листопад</option><option value="12">Грудень</option>
   </select>
+
+  <button onclick="exportState()">Експорт даних</button>
+  <button onclick="openStateImport()">Імпорт даних</button>
 
   <button onclick="window.print()">Друк</button>
 </div>
@@ -165,19 +157,29 @@ th{background:#f0f3f7}
 </table>
 
 <div class="footer">
-  Службова сторінка • Версія V 1.5.0
+  Службова сторінка • Версія V 1.6.0
 </div>
 
 </div>
 
-<!-- MODAL -->
-<div class="modal" id="modal">
+<!-- МОДАЛ ІМПОРТУ ТАЛОНІВ -->
+<div class="modal" id="modalTalons">
   <div class="modal-content">
     <h2>Імпорт талонів</h2>
     <textarea id="importArea" rows="8" style="width:100%"
-      placeholder="Встав сюди список номерів (кожен з нового рядка)"></textarea><br><br>
+      placeholder="Встав сюди номери талонів (кожен з нового рядка)"></textarea><br><br>
     <button class="primary" onclick="importTalons()">Додати</button>
     <button onclick="closeImport()">Скасувати</button>
+  </div>
+</div>
+
+<!-- МОДАЛ ІМПОРТУ СТАНУ -->
+<div class="modal" id="modalState">
+  <div class="modal-content">
+    <h2>Імпорт стану (JSON)</h2>
+    <input type="file" id="stateFile" accept=".json"><br><br>
+    <button class="primary" onclick="importState()">Імпортувати</button>
+    <button onclick="closeStateImport()">Скасувати</button>
   </div>
 </div>
 
@@ -187,8 +189,9 @@ const months={"01":"Січень","02":"Лютий","03":"Березень","04"
 
 function normalize(v){return v.replace(/[^\d]/g,"")}
 
-function openImport(){document.getElementById("modal").style.display="block"}
-function closeImport(){document.getElementById("modal").style.display="none"}
+/* ---- імпорт талонів ---- */
+function openImport(){document.getElementById("modalTalons").style.display="block"}
+function closeImport(){document.getElementById("modalTalons").style.display="none"}
 
 function importTalons(){
   let lines=document.getElementById("importArea").value.split(/\r?\n/);
@@ -206,6 +209,37 @@ function importTalons(){
   alert("Додано талонів: "+added);
 }
 
+/* ---- експорт / імпорт стану ---- */
+function exportState(){
+  const data=JSON.stringify(talons,null,2);
+  const blob=new Blob([data],{type:"application/json"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob);
+  a.download="talons-backup.json";
+  a.click();
+}
+
+function openStateImport(){document.getElementById("modalState").style.display="block"}
+function closeStateImport(){document.getElementById("modalState").style.display="none"}
+
+function importState(){
+  const f=document.getElementById("stateFile").files[0];
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      talons=JSON.parse(e.target.result);
+      save();render();
+      closeStateImport();
+      alert("Дані успішно імпортовано");
+    }catch{
+      alert("Невірний файл");
+    }
+  };
+  r.readAsText(f);
+}
+
+/* ---- робота з таблицею ---- */
 function toggleUsed(i){talons[i].used=!talons[i].used;save();render()}
 function del(i){if(confirm("Видалити талон?")){talons.splice(i,1);save();render()}}
 function save(){localStorage.setItem("talons",JSON.stringify(talons))}
