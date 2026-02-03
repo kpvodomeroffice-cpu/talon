@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Журнал паливних талонів</title>
+
+<style>
+body{
+  font-family:system-ui,Arial,sans-serif;
+  background:#f4f6f8;
+  margin:0;
+  padding:20px;
+}
+.container{
+  max-width:1200px;
+  margin:auto;
+  background:#fff;
+  padding:20px;
+  border-radius:10px;
+  box-shadow:0 4px 12px rgba(0,0,0,.08);
+}
+.header{
+  text-align:center;
+  padding-bottom:12px;
+  border-bottom:1px solid #e0e0e0;
+  margin-bottom:20px;
+}
+.logo{max-width:100px;margin-bottom:8px}
+h1{font-size:20px;margin:0}
+h2{color:#2f6fad}
+.controls{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:10px;
+}
+input,select,textarea{
+  padding:10px;
+  font-size:15px;
+}
+button{
+  padding:10px 14px;
+  cursor:pointer;
+}
+button.primary{
+  background:#2f6fad;
+  color:#fff;
+  border:none;
+}
+button.secondary{
+  background:#9aa5b1;
+  color:#fff;
+  border:none;
+}
+button.danger{
+  background:#e74c3c;
+  color:#fff;
+  border:none;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:15px;
+  font-size:14px;
+}
+th,td{
+  border:1px solid #ddd;
+  padding:8px;
+  text-align:center;
+}
+th{background:#f0f3f7}
+.used{background:#e9f7ef}
+.summary{
+  margin-top:20px;
+  display:flex;
+  gap:30px;
+  flex-wrap:wrap;
+  font-size:16px;
+}
+.footer{
+  margin-top:25px;
+  text-align:center;
+  font-size:12px;
+  color:#777;
+}
+
+/* MODAL */
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.4);
+}
+.modal-content{
+  background:#fff;
+  max-width:600px;
+  margin:80px auto;
+  padding:20px;
+  border-radius:8px;
+}
+@media print{
+  .controls,button,.modal{display:none}
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+  <img src="logo.png" class="logo">
+  <h1>КП «Водопровідні мережі»<br>
+</div>
+
+<h2>Журнал обліку паливних талонів</h2>
+
+<div class="controls">
+  <button class="primary" onclick="openImport()">Імпорт</button>
+
+  <input id="search" placeholder="Пошук за номером" oninput="render()">
+  <button class="secondary" onclick="clearSearch()">Очистити</button>
+
+  <select id="monthFilter" onchange="render()">
+    <option value="">Всі місяці</option>
+    <option value="01">Січень</option><option value="02">Лютий</option>
+    <option value="03">Березень</option><option value="04">Квітень</option>
+    <option value="05">Травень</option><option value="06">Червень</option>
+    <option value="07">Липень</option><option value="08">Серпень</option>
+    <option value="09">Вересень</option><option value="10">Жовтень</option>
+    <option value="11">Листопад</option><option value="12">Грудень</option>
+  </select>
+
+  <button onclick="window.print()">Друк</button>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>Місяць</th>
+  <th>Номер</th>
+  <th>Паливо</th>
+  <th>Номінал</th>
+  <th>Використано</th>
+  <th>Дія</th>
+</tr>
+</thead>
+<tbody id="tbody"></tbody>
+</table>
+
+<div class="summary" id="summary"></div>
+
+<h2>Підсумок по місяцях</h2>
+
+<table>
+<thead>
+<tr>
+  <th>Місяць</th>
+  <th>А-95</th>
+  <th>ДП</th>
+  <th>Разом</th>
+</tr>
+</thead>
+<tbody id="monthSummary"></tbody>
+</table>
+
+<div class="footer">
+  Службова сторінка • Версія V 1.5.0
+</div>
+
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h2>Імпорт талонів</h2>
+    <textarea id="importArea" rows="8" style="width:100%"
+      placeholder="Встав сюди список номерів (кожен з нового рядка)"></textarea><br><br>
+    <button class="primary" onclick="importTalons()">Додати</button>
+    <button onclick="closeImport()">Скасувати</button>
+  </div>
+</div>
+
+<script>
+let talons=JSON.parse(localStorage.getItem("talons")||"[]");
+const months={"01":"Січень","02":"Лютий","03":"Березень","04":"Квітень","05":"Травень","06":"Червень","07":"Липень","08":"Серпень","09":"Вересень","10":"Жовтень","11":"Листопад","12":"Грудень"};
+
+function normalize(v){return v.replace(/[^\d]/g,"")}
+
+function openImport(){document.getElementById("modal").style.display="block"}
+function closeImport(){document.getElementById("modal").style.display="none"}
+
+function importTalons(){
+  let lines=document.getElementById("importArea").value.split(/\r?\n/);
+  let added=0;
+  lines.forEach(l=>{
+    let c=normalize(l);
+    if(!/^\d{9}$/.test(c))return;
+    if(talons.find(t=>t.code===c))return;
+    talons.push({code:c,month:c.substr(0,2),fuel:c.substr(2,2),nominal:+c.substr(4,2),used:false});
+    added++;
+  });
+  save();render();
+  document.getElementById("importArea").value="";
+  closeImport();
+  alert("Додано талонів: "+added);
+}
+
+function toggleUsed(i){talons[i].used=!talons[i].used;save();render()}
+function del(i){if(confirm("Видалити талон?")){talons.splice(i,1);save();render()}}
+function save(){localStorage.setItem("talons",JSON.stringify(talons))}
+function clearSearch(){document.getElementById("search").value="";render()}
+
+function render(){
+  let tb=document.getElementById("tbody"),ms=document.getElementById("monthSummary");
+  tb.innerHTML="";ms.innerHTML="";
+  let s=normalize(document.getElementById("search").value),f=document.getElementById("monthFilter").value;
+  let a95=0,dp=0,pm={};
+
+  talons.forEach((t,i)=>{
+    if(s&&!t.code.includes(s))return;
+    if(f&&t.month!==f)return;
+    if(t.used){
+      t.fuel==="01"?a95+=t.nominal:dp+=t.nominal;
+      pm[t.month]=pm[t.month]||{a:0,d:0};
+      t.fuel==="01"?pm[t.month].a+=t.nominal:pm[t.month].d+=t.nominal;
+    }
+    tb.innerHTML+=`
+    <tr class="${t.used?"used":""}">
+      <td>${months[t.month]}</td>
+      <td>№${t.code}</td>
+      <td>${t.fuel==="01"?"Бензин А-95":"Дизель"}</td>
+      <td>${t.nominal}</td>
+      <td><input type="checkbox"${t.used?" checked":""} onclick="toggleUsed(${i})"></td>
+      <td><button class="danger" onclick="del(${i})">🗑</button></td>
+    </tr>`;
+  });
+
+  document.getElementById("summary").innerHTML=
+    `<div><b>А-95:</b> ${a95} л</div><div><b>ДП:</b> ${dp} л</div><div><b>Всього:</b> ${a95+dp} л</div>`;
+
+  Object.keys(pm).sort().forEach(m=>{
+    ms.innerHTML+=`<tr><td>${months[m]}</td><td>${pm[m].a}</td><td>${pm[m].d}</td><td><b>${pm[m].a+pm[m].d}</b></td></tr>`;
+  });
+}
+render();
+</script>
+
+</body>
+</html>
