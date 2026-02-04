@@ -5,6 +5,7 @@
 <title>Журнал паливних талонів</title>
 
 <style>
+/* ===== BASE ===== */
 body{
   font-family:system-ui,Arial,sans-serif;
   background:#f4f6f8;
@@ -21,13 +22,19 @@ body{
 }
 .header{
   text-align:center;
-  padding-bottom:12px;
+  padding-bottom:14px;
   border-bottom:1px solid #e0e0e0;
   margin-bottom:20px;
 }
-.logo{max-width:100px;margin-bottom:8px}
-h1{font-size:20px;margin:0}
-h2{color:#2f6fad}
+.logo{max-width:90px;margin-bottom:8px}
+h1{
+  font-size:26px;   /* ← ЗБІЛЬШЕНО */
+  margin:0;
+  font-weight:700;
+}
+h2{color:#2f6fad;margin:10px 0}
+
+/* ===== CONTROLS ===== */
 .controls{
   display:flex;
   gap:10px;
@@ -41,10 +48,13 @@ input,select,textarea{
 button{
   padding:10px 14px;
   cursor:pointer;
+  border:none;
 }
-button.primary{background:#2f6fad;color:#fff;border:none}
-button.secondary{background:#9aa5b1;color:#fff;border:none}
-button.danger{background:#e74c3c;color:#fff;border:none}
+button.primary{background:#2f6fad;color:#fff}
+button.secondary{background:#9aa5b1;color:#fff}
+button.danger{background:#e74c3c;color:#fff}
+
+/* ===== TABLE ===== */
 table{
   width:100%;
   border-collapse:collapse;
@@ -58,13 +68,15 @@ th,td{
 }
 th{background:#f0f3f7}
 .used{background:#e9f7ef}
+
+/* ===== SUMMARY ===== */
 .summary{
   margin-top:20px;
-  display:flex;
-  gap:30px;
-  flex-wrap:wrap;
   font-size:16px;
+  font-weight:600;
 }
+
+/* ===== FOOTER ===== */
 .footer{
   margin-top:25px;
   text-align:center;
@@ -72,7 +84,7 @@ th{background:#f0f3f7}
   color:#777;
 }
 
-/* modal */
+/* ===== MODAL ===== */
 .modal{
   display:none;
   position:fixed;
@@ -87,9 +99,57 @@ th{background:#f0f3f7}
   border-radius:8px;
 }
 
+/* ===== PRINT ===== */
 @media print{
-  .controls,button,.modal{display:none}
+  body{background:#fff;padding:0}
+  .container{box-shadow:none;border-radius:0}
+
+  .screen-only,
+  #toTop{
+    display:none!important;
+  }
+
+  .print-summary{
+    display:block!important;
+  }
+
+  .print-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+    margin-top:20px;
+  }
+
+  .print-table th{
+    background:#d9d9d9;
+    font-weight:600;
+  }
+
+  .print-table th,
+  .print-table td{
+    border:1px solid #000;
+    padding:8px;
+  }
+
+  .print-table td:first-child{width:70%}
+  .print-table td:last-child{text-align:center}
 }
+
+/* ===== TO TOP ===== */
+#toTop{
+  position:fixed;
+  right:20px;
+  bottom:20px;
+  width:44px;
+  height:44px;
+  border-radius:50%;
+  background:#2f6fad;
+  color:#fff;
+  font-size:18px;
+  display:none;
+  z-index:1000;
+}
+#toTop:hover{background:#1f4f7a}
 </style>
 </head>
 
@@ -99,12 +159,12 @@ th{background:#f0f3f7}
 
 <div class="header">
   <img src="logo.png" class="logo">
-  <h1>КП «Водопровідні мережі»<br>
+  <h1>КП «Водопровідні мережі»</h1>
 </div>
 
-<h2>Журнал обліку паливних талонів</h2>
+<h2 class="screen-only">Журнал обліку паливних талонів</h2>
 
-<div class="controls">
+<div class="controls screen-only">
   <button class="primary" onclick="openImport()">Імпорт талонів</button>
 
   <input id="search" placeholder="Пошук за номером" oninput="render()">
@@ -120,13 +180,19 @@ th{background:#f0f3f7}
     <option value="11">Листопад</option><option value="12">Грудень</option>
   </select>
 
+  <select id="printMode">
+    <option value="month">Друк за місяць</option>
+    <option value="all">Друк за весь період</option>
+  </select>
+
+  <!-- ← КНОПКА ДРУК ПЕРЕНЕСЕНА СЮДИ -->
+  <button onclick="preparePrint()">Друк</button>
+
   <button onclick="exportState()">Експорт даних</button>
   <button onclick="openStateImport()">Імпорт даних</button>
-
-  <button onclick="window.print()">Друк</button>
 </div>
 
-<table>
+<table class="screen-only">
 <thead>
 <tr>
   <th>Місяць</th>
@@ -140,40 +206,41 @@ th{background:#f0f3f7}
 <tbody id="tbody"></tbody>
 </table>
 
-<div class="summary" id="summary"></div>
+<div class="summary screen-only" id="summary"></div>
 
-<h2>Підсумок по місяцях</h2>
+<!-- ===== PRINT SUMMARY ===== -->
+<div class="print-summary" style="display:none">
+  <h2 id="printTitle"></h2>
+  <table class="print-table">
+    <thead>
+      <tr>
+        <th>Показник</th>
+        <th>Значення</th>
+      </tr>
+    </thead>
+    <tbody id="printBody"></tbody>
+  </table>
+</div>
 
-<table>
-<thead>
-<tr>
-  <th>Місяць</th>
-  <th>А-95</th>
-  <th>ДП</th>
-  <th>Разом</th>
-</tr>
-</thead>
-<tbody id="monthSummary"></tbody>
-</table>
-
-<div class="footer">
-  Службова сторінка • Версія V 1.6.0
+<div class="footer screen-only">
+  Службова сторінка • Версія V 2.1.1
 </div>
 
 </div>
 
-<!-- МОДАЛ ІМПОРТУ ТАЛОНІВ -->
+
+<!-- ===== IMPORT TALONS MODAL ===== -->
 <div class="modal" id="modalTalons">
   <div class="modal-content">
     <h2>Імпорт талонів</h2>
     <textarea id="importArea" rows="8" style="width:100%"
-      placeholder="Встав сюди номери талонів (кожен з нового рядка)"></textarea><br><br>
+      placeholder="Кожен номер з нового рядка"></textarea><br><br>
     <button class="primary" onclick="importTalons()">Додати</button>
     <button onclick="closeImport()">Скасувати</button>
   </div>
 </div>
 
-<!-- МОДАЛ ІМПОРТУ СТАНУ -->
+<!-- ===== IMPORT STATE MODAL ===== -->
 <div class="modal" id="modalState">
   <div class="modal-content">
     <h2>Імпорт стану (JSON)</h2>
@@ -183,53 +250,70 @@ th{background:#f0f3f7}
   </div>
 </div>
 
+<button id="toTop" onclick="scrollToTop()">⬆</button>
+
 <script>
-let talons=JSON.parse(localStorage.getItem("talons")||"[]");
-const months={"01":"Січень","02":"Лютий","03":"Березень","04":"Квітень","05":"Травень","06":"Червень","07":"Липень","08":"Серпень","09":"Вересень","10":"Жовтень","11":"Листопад","12":"Грудень"};
+const months={
+  "01":"Січень","02":"Лютий","03":"Березень","04":"Квітень",
+  "05":"Травень","06":"Червень","07":"Липень","08":"Серпень",
+  "09":"Вересень","10":"Жовтень","11":"Листопад","12":"Грудень"
+};
 
-function normalize(v){return v.replace(/[^\d]/g,"")}
+let talons = JSON.parse(localStorage.getItem("talons") || "[]");
 
-/* ---- імпорт талонів ---- */
-function openImport(){document.getElementById("modalTalons").style.display="block"}
-function closeImport(){document.getElementById("modalTalons").style.display="none"}
+function normalize(v){ return v.replace(/[^\d]/g,""); }
+
+/* ===== IMPORT TALONS ===== */
+function openImport(){ modalTalons.style.display="block"; }
+function closeImport(){ modalTalons.style.display="none"; }
 
 function importTalons(){
-  let lines=document.getElementById("importArea").value.split(/\r?\n/);
-  let added=0;
+  const lines = importArea.value.split(/\r?\n/);
+  let added = 0;
+
   lines.forEach(l=>{
-    let c=normalize(l);
-    if(!/^\d{9}$/.test(c))return;
-    if(talons.find(t=>t.code===c))return;
-    talons.push({code:c,month:c.substr(0,2),fuel:c.substr(2,2),nominal:+c.substr(4,2),used:false});
+    const c = normalize(l);
+    if(!/^\d{9}$/.test(c)) return;
+    if(talons.find(t=>t.code===c)) return;
+
+    talons.push({
+      code:c,
+      month:c.substr(0,2),
+      fuel:c.substr(2,2),
+      nominal:+c.substr(4,2),
+      used:false
+    });
     added++;
   });
-  save();render();
-  document.getElementById("importArea").value="";
+
+  save(); render();
+  importArea.value="";
   closeImport();
-  alert("Додано талонів: "+added);
+  alert("Додано талонів: " + added);
 }
 
-/* ---- експорт / імпорт стану ---- */
+/* ===== EXPORT / IMPORT STATE ===== */
 function exportState(){
-  const data=JSON.stringify(talons,null,2);
-  const blob=new Blob([data],{type:"application/json"});
-  const a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  a.download="talons-backup.json";
+  const data = JSON.stringify(talons, null, 2);
+  const blob = new Blob([data], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "talons-backup.json";
   a.click();
 }
 
-function openStateImport(){document.getElementById("modalState").style.display="block"}
-function closeStateImport(){document.getElementById("modalState").style.display="none"}
+function openStateImport(){ modalState.style.display="block"; }
+function closeStateImport(){ modalState.style.display="none"; }
 
 function importState(){
-  const f=document.getElementById("stateFile").files[0];
-  if(!f)return;
-  const r=new FileReader();
-  r.onload=e=>{
+  const f = stateFile.files[0];
+  if(!f) return;
+
+  const r = new FileReader();
+  r.onload = e => {
     try{
-      talons=JSON.parse(e.target.result);
-      save();render();
+      talons = JSON.parse(e.target.result);
+      save(); render();
       closeStateImport();
       alert("Дані успішно імпортовано");
     }catch{
@@ -239,44 +323,88 @@ function importState(){
   r.readAsText(f);
 }
 
-/* ---- робота з таблицею ---- */
-function toggleUsed(i){talons[i].used=!talons[i].used;save();render()}
-function del(i){if(confirm("Видалити талон?")){talons.splice(i,1);save();render()}}
-function save(){localStorage.setItem("talons",JSON.stringify(talons))}
-function clearSearch(){document.getElementById("search").value="";render()}
+/* ===== JOURNAL ===== */
+function toggleUsed(i){
+  talons[i].used = !talons[i].used;
+  save(); render();
+}
+function del(i){
+  if(confirm("Видалити талон?")){
+    talons.splice(i,1);
+    save(); render();
+  }
+}
+function save(){ localStorage.setItem("talons", JSON.stringify(talons)); }
+function clearSearch(){ search.value=""; render(); }
 
 function render(){
-  let tb=document.getElementById("tbody"),ms=document.getElementById("monthSummary");
-  tb.innerHTML="";ms.innerHTML="";
-  let s=normalize(document.getElementById("search").value),f=document.getElementById("monthFilter").value;
-  let a95=0,dp=0,pm={};
+  tbody.innerHTML="";
+  const s = normalize(search.value);
+  const f = monthFilter.value;
+  let a95=0, dp=0;
 
   talons.forEach((t,i)=>{
-    if(s&&!t.code.includes(s))return;
-    if(f&&t.month!==f)return;
+    if(s && !t.code.includes(s)) return;
+    if(f && t.month!==f) return;
+
     if(t.used){
-      t.fuel==="01"?a95+=t.nominal:dp+=t.nominal;
-      pm[t.month]=pm[t.month]||{a:0,d:0};
-      t.fuel==="01"?pm[t.month].a+=t.nominal:pm[t.month].d+=t.nominal;
+      t.fuel==="01" ? a95+=t.nominal : dp+=t.nominal;
     }
-    tb.innerHTML+=`
+
+    tbody.innerHTML += `
     <tr class="${t.used?"used":""}">
       <td>${months[t.month]}</td>
       <td>№${t.code}</td>
       <td>${t.fuel==="01"?"Бензин А-95":"Дизель"}</td>
       <td>${t.nominal}</td>
-      <td><input type="checkbox"${t.used?" checked":""} onclick="toggleUsed(${i})"></td>
+      <td><input type="checkbox"${t.used?" checked":""}
+        onclick="toggleUsed(${i})"></td>
       <td><button class="danger" onclick="del(${i})">🗑</button></td>
     </tr>`;
   });
 
-  document.getElementById("summary").innerHTML=
-    `<div><b>А-95:</b> ${a95} л</div><div><b>ДП:</b> ${dp} л</div><div><b>Всього:</b> ${a95+dp} л</div>`;
-
-  Object.keys(pm).sort().forEach(m=>{
-    ms.innerHTML+=`<tr><td>${months[m]}</td><td>${pm[m].a}</td><td>${pm[m].d}</td><td><b>${pm[m].a+pm[m].d}</b></td></tr>`;
-  });
+  summary.innerText =
+    `A-95: ${a95} л   |   ДП: ${dp} л   |   Всього: ${a95+dp} л`;
 }
+
+/* ===== PRINT ===== */
+function preparePrint(){
+  const mode = printMode.value;
+  const m = monthFilter.value;
+  let a95=0, dp=0;
+
+  talons.forEach(t=>{
+    if(!t.used) return;
+    if(mode==="month" && t.month!==m) return;
+    t.fuel==="01" ? a95+=t.nominal : dp+=t.nominal;
+  });
+
+  if(mode==="month"){
+    if(!m){ alert("Оберіть місяць"); return; }
+    printTitle.innerText =
+      "Підсумок використання пального за " + months[m];
+  }else{
+    printTitle.innerText =
+      "Підсумок використання пального за весь період";
+  }
+
+  printBody.innerHTML = `
+    <tr><td>Бензин А-95, л</td><td>${a95}</td></tr>
+    <tr><td>Дизельне паливо, л</td><td>${dp}</td></tr>
+    <tr><td><b>Всього, л</b></td><td><b>${a95+dp}</b></td></tr>
+  `;
+
+  window.print();
+}
+
+/* ===== TO TOP ===== */
+function scrollToTop(){
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+window.addEventListener("scroll",()=>{
+  toTop.style.display = window.scrollY > 300 ? "block" : "none";
+});
+
 render();
 </script>
 
